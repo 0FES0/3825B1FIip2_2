@@ -1,29 +1,31 @@
 #include <stdexcept>
 #include <iostream>
+#include <cstdlib>
 #include <string>
-using std::string;
+#include <ctime>
+using std::cin;
 using std::cerr;
 using std::cout;
-using std::cin;
+using std::string;
 
 
 class BullsAndCows final{
 
 	string number;
-	unsigned int attempts;
+	size_t attempts;
 
-	void generate(const unsigned short& size) noexcept{
+	void generate(size_t size) noexcept{
 		string digits = "0123456789";
-		for (unsigned short i = 0; i < size; ++i) {
-			char digit = rand() % digits.size();
+		for (size_t i = 0; i < size; ++i) {
+			size_t digit = ((i == 0) ? 1:0) + rand() % ((i == 0) ? 9 : digits.size());
 			number.push_back( digits[digit]);
 			digits.erase(digits.begin()+digit);
 		}
 	}
 
 	bool hasDuplicates(const string& input) const noexcept{
-		for (unsigned short i = 0; i < input.size() - 1; ++i) {
-			for (unsigned short j = i + 1; j < input.size(); ++j) {
+		for (size_t i = 0; i < input.size() - 1; ++i) {
+			for (size_t j = i + 1; j < input.size(); ++j) {
 				if (input[i] == input[j]) {return true;}
 			}
 		}
@@ -33,14 +35,14 @@ class BullsAndCows final{
 	bool printBullsAndCows(const string& input) const noexcept{
 		unsigned short bulls = 0;
 		unsigned short cows = 0;
-		for (unsigned short i = 0; i < number.size(); ++i) {
+		for (size_t i = 0; i < number.size(); ++i) {
 			if (input[i] == number[i]) {++bulls;}
-			for (unsigned short j = 0; j < number.size(); ++j) {
+			for (size_t j = 0; j < number.size(); ++j) {
 				if (j != i && input[i] == number[j]) {++cows;}
 			}
 		}
 		if (bulls == input.size()) {
-			cout << "You won! The number is " << number << ".It took you " << attempts << " attempts to get it.\n";
+			cout << "You won! The number is " << number << ". It took you " << attempts << " attempts to get it.\n";
 			return true;
 		}
 		cout << "Incorrect guess. Bulls: " << bulls << ", Cows: " << cows << '\n';
@@ -49,17 +51,28 @@ class BullsAndCows final{
 
 public:
 
-	BullsAndCows(const unsigned short& size):attempts(0){
-		if (size < 1 || size > 10) {throw std::out_of_range("Incorrect size");}
+	BullsAndCows(size_t size): attempts(0) {
+		if (size < 1 || size > 10) {throw std::out_of_range("Error: Incorrect number length.");}
+		cout << "Game started! Try to guess the " << size << "-digit number.\n";
+		srand((time(nullptr)));
 		generate(size);
 	}
 
 	bool guess(const string& input) {
-		for (unsigned short i = 0; i < number.size(); ++i) {
-			if (input[i] < '0' || input[i] >'9') { throw std::out_of_range("Incorrect chracters used in a guess"); }
+		if (input.size() != number.size()) {
+			cerr << "Error: Guess size does not match number size. Try again.\n";
+			return false;
 		}
-		if (hasDuplicates(input)) { throw std::out_of_range("Guess has repeating digits"); }
-		if (input.size() != number.size()) {throw std::out_of_range("Guess size does not match number size");}
+		for (size_t i = 0; i < number.size(); ++i) {
+			if (input[i] < '0' || input[i] >'9') {
+				cerr << "Error: Incorrect characters in a guess. Use digits 0-9. Try again.\n";
+				return false;
+			}
+		}
+		if (hasDuplicates(input)) {
+			cerr << "Error: Guess has repeating digits. Try again.\n";
+			return false;
+		}
 		++attempts;
 		return printBullsAndCows(input);
 	}
@@ -69,21 +82,19 @@ public:
 
 int main() {
 	try {
-		unsigned short size;
 		cout << "Enter the length of the number (1-10): ";
+		size_t size = 0;
 		cin >> size;
 		BullsAndCows game(size);
 		string guess;
-		cout << "Game started! Try to guess the " << size << "-digit number.\n";
 		while (true) {
 			cout << "Enter your guess: ";
 			cin >> guess;
-			if (game.guess(guess)) {break;}
+			if (game.guess(guess)) { return 0; }
 		}
 	}
-	catch (const std::exception& e) {
-		std::cerr << "Error: " << e.what() << '\n';
+	catch (const std::out_of_range& e) {
+		cerr << e.what() << '\n';
 		return 1;
 	}
-	return 0;
 }
